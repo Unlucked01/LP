@@ -46,7 +46,7 @@ def hungarian_algorithm(cost_matrix):
         print()
 
     # Возвращаем оптимальное решение
-    return copy_matrx, Z
+    return m_copy, Z
 
 
 def min_covering_lines(matrix):
@@ -97,10 +97,16 @@ def form_result(zeros_matrix, cost_matrix):
     return Z
 
 
-cost_matrix = np.array([[50, 50, 120, 20],
-                        [70, 40, 20, 30],
-                        [90, 30, 50, 140],
-                        [70, 20, 60, 70]])
+# cost_matrix = np.array([[50, 50, 120, 20],
+#                         [70, 40, 20, 30],
+#                         [90, 30, 50, 140],
+#                         [70, 20, 60, 70]])
+
+cost_matrix = np.array([[10, 5, 9, 18, 11],
+                        [13, 19, 6, 12, 14],
+                        [3, 2, 4, 4, 5],
+                        [18, 9, 12, 17, 15],
+                        [11, 6, 14, 19, 10]])
 
 assignment, Z = hungarian_algorithm(cost_matrix)
 print(f"До преобразований:\n{cost_matrix}\nОптимальное назначение:\n{assignment}\n\nZ = {Z}")
