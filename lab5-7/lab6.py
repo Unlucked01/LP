@@ -1,5 +1,5 @@
 import numpy as np
-from operator import itemgetter
+import pandas as pd
 
 
 def balance(supply, demand, cost):
@@ -21,7 +21,6 @@ def balance(supply, demand, cost):
 
 
 def northwest_corner(supply, demand, cost):
-    supply, demand, cost = balance(supply, demand, cost)
     r, c = 0, 0
     m, n = cost.shape
     X = np.zeros((m, n))
@@ -67,16 +66,18 @@ def is_optimal(cost, basis_indices, u, v):
 
 def choose_start_cell(cost, basis_indices, u, v):
     m, n = cost.shape
-    deltas = np.zeros((m, n))
+    deltas = np.zeros((m, n), dtype=int)
     for i in range(m):
         for j in range(n):
             if (i, j) not in basis_indices:
                 if (u[i] + v[j]) > cost[i, j]:
                     deltas[i, j] = (u[i] + v[j]) - cost[i, j]
-
-    print("Оценки экономии:\n", deltas, "\nМаксимальный элемент = ", np.max(deltas))
+    print("Cтоимость:")
+    print(pd.DataFrame(cost).to_string(index=False, header=False))
+    print("Оценки экономии:\n", pd.DataFrame(deltas, index=u, columns=v),
+          "\nМаксимальный элемент = ", np.max(deltas))
     max_delta_cells = np.argwhere(deltas == np.max(deltas))
-    min_cost_cells = sorted(max_delta_cells, key=itemgetter(0, 1))
+    min_cost_cells = sorted(max_delta_cells, key=lambda pos: cost[pos[0], pos[1]])
     start_cell = tuple(min_cost_cells[0])
 
     return start_cell
@@ -129,8 +130,8 @@ def redistribute_load(X, basis_indices, cycle):
             min_weight_cells.append((i, j))
 
     print("Ячейки с минимальным значением = ", min_weight_cells)
-    max_cost_cell = sorted(min_weight_cells, key=itemgetter(0, 1), reverse=True)[0]
-    print("Ячейка с максимальной стоимостью перевозки\nиз минимальных = ", max_cost_cell)
+    max_cost_cell = sorted(min_weight_cells, key=lambda pos: cost[pos[0]][pos[1]], reverse=True)[0]
+    print("Ячейка с максимальной стоимостью перевозки из минимальных = ", max_cost_cell)
     basis_indices.remove(tuple(max_cost_cell))
     basis_indices.append(cycle[0])
     print("Базисные индексы = ", basis_indices)
@@ -140,15 +141,7 @@ def redistribute_load(X, basis_indices, cycle):
 
     for i, j in cycle[1::2]:
         X[i][j] -= min_weight
-
     return X
-
-
-def calc_Z(X, costs, basis_indices):
-    Z = 0
-    for i, j in basis_indices:
-        Z += costs[i, j] * X[i, j]
-    return Z
 
 
 def solve(supply, demand, cost):
@@ -162,13 +155,24 @@ def solve(supply, demand, cost):
         print("Стартовая ячейка цикла = ", start_cell)
         cycle = find_cycle(basis_indices, start_cell)
         print("Цикл:", cycle)
-        print("До преобразований:\n", X)
+        print("До преобразований:\n", pd.DataFrame(X, dtype=int).to_string(index=False, header=False))
         X = redistribute_load(X, basis_indices, cycle)
-        print("После преобразований:\n", X)
+        print("После преобразований:\n", pd.DataFrame(X, dtype=int).to_string(index=False, header=False))
         print()
 
-    new_z = calc_Z(X, cost, basis_indices)
-    return X, Z, new_z
+    new_Z = 0
+    for i, j in basis_indices:
+        new_Z += cost[i, j] * X[i, j]
+
+    return X, Z, new_Z, basis_indices
+
+
+def check_basics(basis_indices, supply, demand):
+    return len(basis_indices) == len(supply) + len(demand) - 1
+
+
+def check_zeros(basis_indices, cost):
+    return any(cost[i][j] for i, j in basis_indices)
 
 
 if __name__ == "__main__":
@@ -180,8 +184,21 @@ if __name__ == "__main__":
     supply = np.array([350, 200, 300])
     demand = np.array([170, 140, 200, 195, 145])
 
-    solution, Z, new_Z = solve(supply, demand, cost)
-    print("Оптимальное решение:\n", solution)
+    supply, demand, cost = balance(supply, demand, cost)
+
+    solution, Z, new_Z, basis_indices = solve(supply, demand, cost)
+
+    print("Оптимальное решение:")
+    print(pd.DataFrame(solution).to_string(index=False, header=False))
     print("\nЗначение целевой функции до: ", Z)
     print("Значение целевой функции после: ", new_Z)
+
+    if check_basics(basis_indices, supply, demand) and check_zeros(basis_indices, cost):
+        print("Решение базисное и невырожденное")
+    elif check_basics(basis_indices, supply, demand) and not check_zeros(basis_indices, cost):
+        print("Решение базисное и вырожденное")
+    elif not check_basics(basis_indices, supply, demand) and check_zeros(basis_indices, cost):
+        print("Решение не базисное и вырожденное")
+    elif not check_basics(basis_indices, supply, demand) and not check_zeros(basis_indices, cost):
+        print("Решение не базисное и невырожденное")
 
