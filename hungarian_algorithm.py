@@ -1,3 +1,4 @@
+# Lab 7
 import numpy as np
 
 
@@ -96,7 +97,6 @@ def form_result(zeros_matrix, cost_matrix):
     return Z
 
 
-# Пример использования
 cost_matrix = np.array([[50, 50, 120, 20],
                         [70, 40, 20, 30],
                         [90, 30, 50, 140],
