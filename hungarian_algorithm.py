@@ -9,7 +9,7 @@ def hungarian_algorithm(cost_matrix):
     copy_matrx -= np.min(copy_matrx, axis=1, keepdims=True)
     # Вычитание минимального элемента в каждом столбце
     copy_matrx -= np.min(copy_matrx, axis=0, keepdims=True)
-    print("Первое приблежение\n", copy_matrx)
+    print("Первое приближение\n", copy_matrx)
 
     while True:
         min_zeros_row = np.argmin(np.sum(copy_matrx == 0, axis=1))
@@ -27,6 +27,7 @@ def hungarian_algorithm(cost_matrix):
             m_copy[indices_c, indices_r[0]] = -1
 
         if np.count_nonzero(m_copy == 0) == n:
+            print("Достигнуто оптимальное решение")
             Z = form_result(m_copy, cost_matrix)
             break
 
@@ -55,8 +56,6 @@ def min_covering_lines(matrix):
     cols_lines = set()
     rows_lines = set()
 
-    # Подсчет количества нулей в каждой строке и столбце
-    # и выбор порядка вычеркивания
     num_zeros_rows = np.sum(m == 0, axis=1)
     num_zeros_cols = np.sum(m == 0, axis=0)
     max_count = max(np.max(num_zeros_rows), np.max(num_zeros_cols))
@@ -65,28 +64,24 @@ def min_covering_lines(matrix):
     max_count_in_c = np.count_nonzero(num_zeros_cols == max_count)
 
     if max_count_in_r >= max_count_in_c:
-        # сначала вычеркиваем строки
         rows = np.where(num_zeros_rows == max_count)[0]
         for row in rows:
             rows_lines.add(row)
-            m[row][m[row] == 0] = -1  # меняем 0 в этих строках
-
-        # Находим столбцы, в которых остались 0 и добавляем их
+            m[row][m[row] == 0] = -1
         columns_with_zeros = np.where(np.any(m == 0, axis=0))[0]
         for col in columns_with_zeros:
             cols_lines.add(col)
+            m[:, col] = np.where(m[:, col] == 0, -1, m[:, col])
     else:
-        # сначала вычеркиваем столбцы
         cols = np.where(num_zeros_cols == max_count)[0]
         for col in cols:
             cols_lines.add(col)
-            m[:, col] = np.where(m[:, col] == 0, -1, m[:, col]) # меняем 0 в этих столбцах
+            m[:, col] = np.where(m[:, col] == 0, -1, m[:, col])
 
-        # Находим строки, в которых остались 0 и добавляем их
         rows_with_zeros = np.where((m == 0).any(axis=1))[0]
         for row in rows_with_zeros:
             rows_lines.add(row)
-
+            m[row][m[row] == 0] = -1
     return list(rows_lines), list(cols_lines)
 
 
@@ -97,16 +92,16 @@ def form_result(zeros_matrix, cost_matrix):
     return Z
 
 
-# cost_matrix = np.array([[50, 50, 120, 20],
-#                         [70, 40, 20, 30],
-#                         [90, 30, 50, 140],
-#                         [70, 20, 60, 70]])
+cost_matrix = np.array([[50, 50, 120, 20],
+                        [70, 40, 20, 30],
+                        [90, 30, 50, 140],
+                        [70, 20, 60, 70]])
 
-cost_matrix = np.array([[10, 5, 9, 18, 11],
-                        [13, 19, 6, 12, 14],
-                        [3, 2, 4, 4, 5],
-                        [18, 9, 12, 17, 15],
-                        [11, 6, 14, 19, 10]])
+# cost_matrix = np.array([[10, 5, 9, 18, 11],
+#                         [13, 19, 6, 12, 14],
+#                         [3, 2, 4, 4, 5],
+#                         [18, 9, 12, 17, 15],
+#                         [11, 6, 14, 19, 10]])
 
 assignment, Z = hungarian_algorithm(cost_matrix)
 print(f"До преобразований:\n{cost_matrix}\nОптимальное назначение:\n{assignment}\n\nZ = {Z}")
